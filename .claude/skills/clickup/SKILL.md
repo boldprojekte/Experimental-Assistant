@@ -1,107 +1,103 @@
 ---
 name: ClickUp
-description: Workflow-Anleitung für ClickUp-Operationen. Verwende bei Aufgaben erstellen, Aufgaben bearbeiten, Aufgaben suchen, alle Aufgaben in Projekt anzeigen, Kontakte verwalten, Dokumente erstellen, Listen organisieren, Ordner erstellen, Zeiterfassung starten, oder Zeiterfassung stoppen. Kritisch für korrekte Such-Strategie-Auswahl und Workspace-Struktur-Verständnis.
+description: Workflow guide for ClickUp operations. Use for creating tasks, editing tasks, searching tasks, showing all tasks in project, managing contacts (located in Backoffice Space), creating documents, organizing lists, creating folders, starting time tracking, or stopping time tracking. Critical for correct search strategy selection and workspace structure understanding.
 ---
 
 # ClickUp Workflow
 
-Workflow-Anleitung für ClickUp-Operationen mit Fokus auf korrekte Such-Strategie und Workspace-Struktur.
+Workflow guide for ClickUp operations with focus on correct search strategy and workspace structure.
 
-## Workspace-Struktur
+## Workspace Structure
 
-**KRITISCH** für die Bestimmung, wo Elemente erstellt oder gefunden werden.
+**IMPORTANT** for determining where to create or find elements.
 
-### Spaces Übersicht
+### Spaces Overview
 
-- **Personal List** (ID: `901208069739`) - Private Aufgaben. **VERSTECKTER** Space, nicht in Hierarchie-Abfragen sichtbar. Für alle persönlichen/privaten Aufgaben verwenden.
-- **Privat** - Nur private Notizen und Dokumente (NICHT für Aufgaben!)
-- **Operations** - Architekturprojekte (Format: Projektnummer + Ort + Straße)
-- **Gut Gewohnt** - Bauträger-Projektentwicklung (mit Robert Crummenerl)
-- **Backoffice** - Buchhaltung, Einkäufe, **Kontakte**, Urlaubskalender
-- **Process Library** - ClickUp-Vorlagen (Projektordner mit vorkonfigurierten Aufgaben)
-- **Growth** - Wachstums-Aufgaben/Dokumente (Webseite, Marketing, Akquise)
-- **baumeet.ing** - Bauprotokoll-SaaS-Plattform
+- **Personal List** (ID: `901208069739`) - Private tasks. **HIDDEN** space, not visible in hierarchy queries. Use for all personal/private tasks.
+- **Privat** - Only private notes and documents (NOT for tasks!)
+- **Operations** - Architecture projects (Format: Project number + Location + Street)
+- **Gut Gewohnt** - Real estate project development (with Robert Crummenerl)
+- **Backoffice** - Accounting, purchases, **Contacts**, vacation calendar
+- **Process Library** - ClickUp templates (Project folders with pre-configured tasks)
+- **Growth** - Growth tasks/documents (Website, Marketing, Acquisition)
+- **baumeet.ing** - Construction protocol SaaS platform
 
-## Such-Strategie
+## Search Strategy
 
-**KRITISCH**: Wähle den korrekten Such-Ansatz basierend auf der Anfrage.
+**IMPORTANT**: Choose the correct search approach based on the request.
 
-### Kontextbasierte Suche (alle Aufgaben in Projekt/Liste/Space)
+### Context-Based Search (all tasks in project/list/space)
 
-Verwende wenn User nach "alle Aufgaben in X" oder "zeige Projekt Y Aufgaben" fragt:
+Use when user asks for "all tasks in X" or "show project Y tasks":
 
-1. Verwende `clickup_get_workspace_hierarchy` um Listen/Ordner-ID zu identifizieren
-2. Verwende `clickup_get_workspace_tasks` mit `list_ids` oder `folder_ids`
-3. **NIEMALS `clickup_search` verwenden** - durchsucht nur Titel, verpasst die meisten Aufgaben
+1. Use `clickup_get_workspace_hierarchy` to identify list/folder ID
+2. Use `clickup_get_workspace_tasks` with `list_ids` or `folder_ids`
+3. **NEVER use `clickup_search`** - only searches titles, misses most tasks
 
-**Beispiele:**
-- "Zeige alle Aufgaben im Prozessionsweg" → `clickup_get_workspace_tasks` mit `list_ids`
-- "Was gibt es in Gut Gewohnt zu tun?" → `clickup_get_workspace_tasks` mit `space_ids`
+### Keyword Search (find specific task)
 
-### Keyword-Suche (spezifische Aufgabe finden)
+Use when searching for a specific task by name/keyword:
 
-Verwende beim Suchen einer spezifischen Aufgabe nach Name/Keyword:
+1. Use `clickup_search` with search terms
+2. Identify correct task from results
 
-1. Verwende `clickup_search` mit Suchbegriffen
-2. Identifiziere korrekte Aufgabe aus Ergebnissen
+**Examples:**
+- "Find task 'Call Kaya'" → `clickup_search` with keywords
+- "Where is the invoice for supplier X?" → `clickup_search`
 
-**Beispiele:**
-- "Finde Aufgabe 'Kaya anrufen'" → `clickup_search` mit Keywords
-- "Wo ist die Rechnung für Lieferant X?" → `clickup_search`
+### Search Before Modify
 
-### Suchen vor Ändern
+Always search for existing element before update/edit:
+- Use `clickup_search` for tasks by name
+- Verify existence before update tool call
 
-Suche immer nach existierendem Element vor Update/Bearbeitung:
-- Verwende `clickup_search` für Aufgaben nach Name
-- Verifiziere Existenz vor Update-Tool-Aufruf
+## Task Operations
 
-## Aufgaben-Operationen
+### Default Settings
 
-### Standard-Einstellungen
+Apply unless explicitly specified otherwise:
+- **Priority**: normal
+- **Assignee**: "me" (the user)
+- **Due Date**: only if mentioned
+- **Tags**: only if mentioned
+- **Custom Fields**: only if mentioned
 
-Anwenden außer explizit anders angegeben:
-- **Priorität**: normal
-- **Assignee**: "me" (der User)
-- **Due Date**: nur wenn erwähnt
-- **Tags**: nur wenn erwähnt
-- **Custom Fields**: nur wenn erwähnt
+### Create Task
 
-### Aufgabe erstellen
+1. Identify target list from workspace structure
+2. Use `clickup_create_task` with `list_id` and `name`
+3. Apply defaults, optional fields only if specified
+4. Provide link: `https://app.clickup.com/t/{task_id}`
 
-1. Ziel-Liste aus Workspace-Struktur identifizieren
-2. Verwende `clickup_create_task` mit `list_id` und `name`
-3. Wende Defaults an, optionale Felder nur wenn spezifiziert
-4. Gib Link aus: `https://app.clickup.com/t/{task_id}`
+### Bulk Operations
 
-### Bulk-Operationen
+For multiple tasks in the same list:
+- Use `clickup_create_bulk_tasks` (more efficient than multiple single calls)
 
-Für mehrere Aufgaben in derselben Liste:
-- Verwende `clickup_create_bulk_tasks` (effizienter als mehrere Einzelaufrufe)
+## Additional Operations
 
-## Weitere Operationen
+### Contacts
+- Location: Backoffice Space
+- Search first with `clickup_search`
 
-### Kontakte
-- Ort: Backoffice Space
-- Erst mit `clickup_search` suchen
-
-### Dokumente
-- Ort basierend auf Kontext:
-  - Privat → Privat Space
-  - Projekt → Operations Space (spezifisches Projekt)
-  - Vorlagen → Process Library
-  - Wachstum → Growth Space
+### Documents
+- Location based on context:
+  - Private → Privat Space
+  - Project → Operations Space (specific project)
+  - Templates → Process Library
+  - Growth → Growth Space
   - baumeet.ing → baumeet.ing Space
-- Dokument-Link nach Erstellung bereitstellen
+- Provide document link after creation
 
-### Zeiterfassung
+### Time Tracking
 - Start: `clickup_start_time_tracking`
 - Stop: `clickup_stop_time_tracking`
-- Manuell: `clickup_add_time_entry`
+- Manual: `clickup_add_time_entry`
 
-## Kern-Prinzipien
+## Core Principles
 
-1. **Korrekte Such-Strategie wählen** - Kontextbasiert vs. Keyword-Suche
-2. **Geschwindigkeit vor Perfektion** - Defaults verwenden, nicht zu viel nachfragen
-3. **Struktur-Bewusstsein** - Workspace-Struktur kennen vor Aktion
-4. **Immer verlinken** - Direkte ClickUp-Links zu erstellten/geänderten Elementen bereitstellen
-5. **Personal List für Privates** - ID `901208069739` für persönliche Aufgaben
+1. **Choose correct search strategy** - Context-based vs. Keyword search
+2. **Speed over perfection** - Use defaults, don't ask too much
+3. **Structure awareness** - Know workspace structure before action
+4. **Always link** - Provide direct ClickUp links to created/modified elements
+5. **Personal List for private** - ID `901208069739` for personal tasks

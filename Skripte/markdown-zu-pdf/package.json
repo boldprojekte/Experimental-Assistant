@@ -1,0 +1,22 @@
+{
+  "name": "markdown-zu-pdf",
+  "version": "1.0.0",
+  "description": "Markdown zu PDF Konverter mit modernem GitHub-Styling",
+  "main": "markdown_zu_pdf.js",
+  "type": "module",
+  "scripts": {
+    "convert": "node markdown_zu_pdf.js",
+    "watch": "node markdown_zu_pdf.js --watch"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "converter",
+    "github-style"
+  ],
+  "author": "Jan-Peter Franke",
+  "license": "MIT",
+  "dependencies": {
+    "md-to-pdf": "^5.2.4"
+  }
+}

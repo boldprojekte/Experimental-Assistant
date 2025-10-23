@@ -1,0 +1,26 @@
+{
+  "name": "audio-transcription",
+  "version": "1.0.0",
+  "description": "Convert audio/video files to MP3 and transcribe with Assembly.ai",
+  "type": "module",
+  "main": "transcribe_audio.js",
+  "scripts": {
+    "start": "node transcribe_audio.js"
+  },
+  "keywords": [
+    "audio",
+    "video",
+    "transcription",
+    "assemblyai",
+    "ffmpeg",
+    "mp3"
+  ],
+  "author": "Jan-Peter Franke",
+  "license": "MIT",
+  "dependencies": {
+    "assemblyai": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.3",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "dotenv": "^16.4.5"
+  }
+}
