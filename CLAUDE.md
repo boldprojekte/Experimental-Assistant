@@ -6,13 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a personal AI assistant project for Jan-Peter Franke that integrates with:
 - **ClickUp** (project management) via MCP server with dedicated skill
+- **Google Calendar** (calendar management) via MCP server with dedicated skill
 - **Gmail** (email management) via MCP server
 
 ## Project Structure
 
 ```
 ├── .claude/
-│   ├── skills/clickup/        # ClickUp workflow skill (SKILL.md)
+│   ├── skills/
+│   │   ├── clickup/           # ClickUp workflow skill (SKILL.md)
+│   │   └── calendar/          # Calendar workflow skill (SKILL.md)
 │   └── settings.local.json    # MCP tool permissions
 ├── Dokumente/                 # Document management
 │   ├── 00_Archiv/            # Archived documents
@@ -51,9 +54,19 @@ Use the skill for ANY ClickUp-related operations:
 
 **NEVER call ClickUp MCP tools directly** without first loading the skill. The skill contains critical workflow guidance, workspace structure, and search strategy logic.
 
-## MCP Tool Permissions
+## Calendar Integration
 
-The following Gmail tools are pre-approved and don't require user confirmation:
-- `mcp__Gmail__search`
-- `mcp__Gmail__get`
-- `mcp__Gmail__getThread`
+**CRITICAL**: Always use the Calendar skill when working with calendar operations.
+
+### When to Invoke the Calendar Skill
+
+Use the skill for ANY calendar-related operations:
+- Viewing/retrieving calendar events (today, this week, next week, etc.)
+- Creating new appointments or meetings
+- Deleting calendar events
+- Checking for scheduling conflicts
+- Any operation involving both business and personal calendars
+
+**Invoke the skill**: Use `Skill` tool with command `calendar` before calling any `mcp__Calendar__*` tools.
+
+**NEVER call Calendar MCP tools directly** without first loading the skill. The skill contains critical calendar selection logic (business vs. personal) and conflict-checking requirements.

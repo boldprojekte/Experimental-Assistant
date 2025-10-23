@@ -3,7 +3,9 @@
     "allow": [
       "mcp__Gmail__search",
       "mcp__Gmail__get",
-      "mcp__Gmail__getThread"
+      "mcp__Gmail__getThread",
+      "mcp__Calendar__searchEvent",
+      "mcp__Calendar__searchEvent_p"
     ],
     "deny": [],
     "ask": []
