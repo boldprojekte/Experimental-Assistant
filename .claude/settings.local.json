@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Gmail__search",
+      "mcp__Gmail__get",
+      "mcp__Gmail__getThread"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
