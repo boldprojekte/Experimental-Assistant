@@ -47,12 +47,13 @@ class DocumentIndexer:
 
     METADATA_FILE = "rag_metadata.json"
 
-    def __init__(self, docs_path: str):
+    def __init__(self, docs_path: str, silent: bool = False):
         """Initialize indexer with document path"""
         self.docs_path = Path(docs_path).resolve()
         # Store metadata in script directory instead of docs directory
         self.metadata_path = SCRIPT_DIR / self.METADATA_FILE
         self.file_metadata = self._load_metadata()
+        self.silent = silent
 
         # Setup LlamaIndex components
         self._setup_clients()
@@ -137,7 +138,8 @@ class DocumentIndexer:
         if use_semantic_chunking:
             from llama_index.core.node_parser import SemanticSplitterNodeParser
 
-            print("✓ Using Semantic Chunking (adaptive breakpoints)")
+            if not self.silent:
+                print("✓ Using Semantic Chunking (adaptive breakpoints)")
 
             # Semantic Splitter für optimale Chunk-Grenzen
             Settings.node_parser = SemanticSplitterNodeParser(
@@ -148,7 +150,8 @@ class DocumentIndexer:
         else:
             from llama_index.core.node_parser import SentenceSplitter
 
-            print(f"✓ Using SentenceSplitter (token-based: {min_chunk_size}-{max_chunk_size} tokens)")
+            if not self.silent:
+                print(f"✓ Using SentenceSplitter (token-based: {min_chunk_size}-{max_chunk_size} tokens)")
 
             # SentenceSplitter mit Token-Limit und Markdown-Awareness
             # Respektiert Absätze durch paragraph_separator

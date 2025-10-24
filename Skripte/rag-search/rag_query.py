@@ -29,6 +29,7 @@ Examples:
 import os
 import sys
 import argparse
+import json
 from pathlib import Path
 from typing import Optional, Dict, List
 
@@ -89,29 +90,34 @@ class RAGQuery:
             fastembed_sparse_model="Qdrant/bm42-all-minilm-l6-v2-attentions"
         )
 
-    def check_and_reindex(self):
+    def check_and_reindex(self, silent: bool = False):
         """Check if files changed and reindex if needed"""
-        print("🔍 Checking for file changes...")
+        if not silent:
+            print("🔍 Checking for file changes...")
 
         # Import indexer
         from rag_index import DocumentIndexer
 
-        indexer = DocumentIndexer(str(self.docs_path))
+        indexer = DocumentIndexer(str(self.docs_path), silent=silent)
         changed_files = indexer.get_changed_files()
 
         if changed_files:
-            print(f"⚠️  {len(changed_files)} files have changed. Re-indexing...")
+            if not silent:
+                print(f"⚠️  {len(changed_files)} files have changed. Re-indexing...")
             indexer.index_documents()
-            print("✓ Re-indexing complete\n")
+            if not silent:
+                print("✓ Re-indexing complete\n")
         else:
-            print("✓ All files up to date\n")
+            if not silent:
+                print("✓ All files up to date\n")
 
     def query(
         self,
         question: str,
         subdirectory: Optional[str] = None,
         similarity_top_k: Optional[int] = None,
-        sparse_top_k: Optional[int] = None
+        sparse_top_k: Optional[int] = None,
+        silent: bool = False
     ) -> List:
         """
         Query the RAG system (retrieval only, no LLM generation)
@@ -177,13 +183,14 @@ class RAGQuery:
         )
 
         # Execute query
-        print(f"💬 Query: {question}")
-        if subdirectory:
-            print(f"📁 Filter: subdirectory = '{subdirectory}'")
-        if use_rerank:
-            print(f"🎯 Reranking: Enabled (Cohere rerank-english-v3.0)")
-            print(f"   Candidates: {rerank_candidates} → Final: {rerank_top_n}")
-        print(f"🔎 Searching (hybrid: dense + sparse)...\n")
+        if not silent:
+            print(f"💬 Query: {question}")
+            if subdirectory:
+                print(f"📁 Filter: subdirectory = '{subdirectory}'")
+            if use_rerank:
+                print(f"🎯 Reranking: Enabled (Cohere rerank-english-v3.0)")
+                print(f"   Candidates: {rerank_candidates} → Final: {rerank_top_n}")
+            print(f"🔎 Searching (hybrid: dense + sparse)...\n")
 
         # Retrieve nodes (no LLM generation)
         nodes = retriever.retrieve(question)
@@ -194,10 +201,10 @@ class RAGQuery:
 
         return nodes
 
-    def format_response(self, nodes, show_sources: bool = True):
+    def format_response(self, nodes, show_sources: bool = True, json_output: bool = False):
         """Format and print retrieved nodes (no LLM answer)"""
         # Get score threshold from ENV
-        score_threshold = float(os.getenv('RAG_SCORE_THRESHOLD', '0.3'))
+        score_threshold = float(os.getenv('RAG_SCORE_THRESHOLD', '0.2'))
 
         if show_sources and nodes:
             # Filter nodes by score threshold
@@ -207,26 +214,57 @@ class RAGQuery:
             ]
 
             if not filtered_nodes:
-                print("=" * 80)
-                print("⚠️  NO RELEVANT SOURCES FOUND")
-                print("=" * 80)
-                print(f"No sources with score >= {score_threshold} found.")
-                print("This may indicate the query is not relevant to the indexed documents.\n")
+                if json_output:
+                    print(json.dumps({
+                        "status": "no_results",
+                        "message": f"No sources with score >= {score_threshold} found.",
+                        "chunks": []
+                    }))
+                else:
+                    print("=" * 80)
+                    print("⚠️  NO RELEVANT SOURCES FOUND")
+                    print("=" * 80)
+                    print(f"No sources with score >= {score_threshold} found.")
+                    print("This may indicate the query is not relevant to the indexed documents.\n")
                 return
 
-            print("=" * 80)
-            print(f"📚 RETRIEVED {len(filtered_nodes)} CHUNKS")
-            print("=" * 80)
+            if json_output:
+                # JSON output
+                result = {
+                    "status": "success",
+                    "count": len(filtered_nodes),
+                    "score_threshold": score_threshold,
+                    "chunks": []
+                }
 
-            for idx, node in enumerate(filtered_nodes, 1):
-                score = node.score if hasattr(node, 'score') else 'N/A'
-                filename = node.metadata.get('filename', 'Unknown')
-                subdirectory = node.metadata.get('subdirectory', 'root')
+                for node in filtered_nodes:
+                    chunk_data = {
+                        "text": node.text,
+                        "score": float(node.score) if hasattr(node, 'score') else None,
+                        "metadata": {
+                            "filename": node.metadata.get('filename', 'Unknown'),
+                            "subdirectory": node.metadata.get('subdirectory', 'root'),
+                            "file_path": node.metadata.get('file_path', ''),
+                        }
+                    }
+                    result["chunks"].append(chunk_data)
 
-                print(f"\n[{idx}] {filename} ({subdirectory})")
-                print(f"    Score: {score}")
-                print(f"    Text: {node.text[:200]}...")
-                print()
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+            else:
+                # Human-readable output
+                print("=" * 80)
+                print(f"📚 RETRIEVED {len(filtered_nodes)} CHUNKS")
+                print("=" * 80)
+
+                for idx, node in enumerate(filtered_nodes, 1):
+                    score = node.score if hasattr(node, 'score') else 'N/A'
+                    filename = node.metadata.get('filename', 'Unknown')
+                    subdirectory = node.metadata.get('subdirectory', 'root')
+
+                    print(f"\n[{idx}] {filename} ({subdirectory})")
+                    print(f"    Score: {score}")
+                    print(f"    Text: {node.text}")
+                    print()
 
 
 def main():
@@ -288,16 +326,23 @@ Examples:
         help='Hide source information in output'
     )
 
+    parser.add_argument(
+        '--json',
+        action='store_true',
+        help='Output results as JSON instead of human-readable format'
+    )
+
     args = parser.parse_args()
 
-    # Create query engine
-    print(f"🔧 Loading configuration from: {SCRIPT_DIR / '.env'}\n")
+    # Suppress log messages if JSON output is requested
+    if not args.json:
+        print(f"🔧 Loading configuration from: {SCRIPT_DIR / '.env'}\n")
 
     rag = RAGQuery(docs_path=args.docs_path)
 
     # Check for changes and reindex if needed
     if not args.no_reindex_check:
-        rag.check_and_reindex()
+        rag.check_and_reindex(silent=args.json)
 
     # Execute query
     try:
@@ -305,16 +350,25 @@ Examples:
             question=args.question,
             subdirectory=args.subdir,
             similarity_top_k=args.top_k,
-            sparse_top_k=args.sparse_top_k
+            sparse_top_k=args.sparse_top_k,
+            silent=args.json
         )
 
         # Format and display nodes
-        rag.format_response(nodes, show_sources=not args.no_sources)
+        rag.format_response(nodes, show_sources=not args.no_sources, json_output=args.json)
 
     except Exception as e:
-        print(f"❌ Error during query: {e}")
-        import traceback
-        traceback.print_exc()
+        if args.json:
+            # JSON error output
+            print(json.dumps({
+                "status": "error",
+                "message": str(e),
+                "chunks": []
+            }))
+        else:
+            print(f"❌ Error during query: {e}")
+            import traceback
+            traceback.print_exc()
         sys.exit(1)
 
 

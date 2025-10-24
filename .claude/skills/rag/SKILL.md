@@ -70,20 +70,51 @@ Hybrid search (BM25 + Dense Vector) for long-term knowledge in `Dokumente/03_RAG
 
 ### Step 3: Execute Retrieval
 
+**CRITICAL**: Always use `--json` flag for structured, parsable output.
+
 ```bash
 cd /Users/j.franke/Desktop/Windsurf/Experimental-Assistant/Skripte/rag-search
 
-# Preferred - use defaults (proven optimal)
-python3 rag_query.py "semantically rich reformulated query"
+# Standard query with JSON output (REQUIRED)
+python3 rag_query.py "semantically rich reformulated query" --json
 
 # With subdirectory filter
-python3 rag_query.py "query" --subdir {topic}
+python3 rag_query.py "query" --subdir {topic} --json
 
 # ONLY if clear problem after evaluation
-python3 rag_query.py "query" --top-k 10
+python3 rag_query.py "query" --top-k 10 --json
 ```
 
+**JSON Output Format**:
+```json
+{
+  "status": "success",
+  "count": 3,
+  "score_threshold": 0.2,
+  "chunks": [
+    {
+      "text": "Complete chunk text without truncation...",
+      "score": 0.9935,
+      "metadata": {
+        "filename": "document.pdf",
+        "subdirectory": "topic",
+        "file_path": "/path/to/document.pdf"
+      }
+    }
+  ]
+}
+```
+
+**Parsing Instructions**:
+1. Locate first `{` in output (skip any log messages before JSON)
+2. Parse JSON from that point: `json_start = output.find('{'); json.loads(output[json_start:])`
+3. Access chunks via `data['chunks']`, each has `text`, `score`, and `metadata`
+4. **Important**: `text` field contains FULL chunk text (no truncation)
+
 **Parameter Discipline (Best Practice 2024-2025)**:
+
+✅ **ALWAYS USE**:
+- `--json`: Required for reliable parsing and complete text
 
 ✅ **USE DEFAULTS** (preferred):
 - `--top-k 5`: Proven optimal for most queries
@@ -99,8 +130,10 @@ python3 rag_query.py "query" --top-k 10
 - Speculatively tune parameters "just in case"
 - Change settings without evidence of problems
 - Over-optimize prematurely
+- Forget `--json` flag
 
 **Available Parameters** (use sparingly):
+- `--json`: **REQUIRED** - Structured JSON output
 - `--subdir {name}`: Filter by subdirectory
 - `--top-k {n}`: Number of chunks (default: 5, range: 3-10)
 - `--sparse-top-k {n}`: Keyword focus (default: 12)
@@ -227,11 +260,13 @@ The knowledge base contains different perspectives:
    - Use proven defaults (top_k=5, sparse_top_k=12)
    - Don't tune speculatively without evidence
    - Adjust only for clear, evaluated problems
+   - **ALWAYS use --json flag** for reliable output
 
 4. **Strict Grounding**
-   - Answer ONLY from retrieved chunks
+   - Answer ONLY from retrieved chunks (complete text, no truncation)
    - Cite every statement with source
    - Transparent about gaps and limitations
+   - **Read entire chunk text** - important info may be at end
 
 5. **Honest Transparency**
    - Say "not found" when information isn't in chunks
@@ -249,8 +284,9 @@ The knowledge base contains different perspectives:
 ❌ **Speculation**: Guessing what chunks "probably mean"
 ❌ **Citation Skipping**: Making statements without source attribution
 ❌ **Premature Optimization**: Adjusting settings before evaluating results
+❌ **Missing JSON Flag**: Not using --json (causes parsing errors, truncation)
 
-✅ **Best Practices**: Semantic queries, hard limits, default parameters, strict grounding, transparent failures
+✅ **Best Practices**: JSON output, semantic queries, hard limits, default parameters, strict grounding, complete chunk reading, transparent failures
 
 ---
 

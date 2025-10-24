@@ -8,7 +8,9 @@ Intelligent document search using Retrieval-Augmented Generation with hybrid sea
 - **Cohere Reranking**: Optional ML-based reranking for significantly improved relevance (rerank-english-v3.0)
 - **Smart Indexing**: Auto-detects changed, new, and deleted files - only re-indexes what's needed
 - **Intelligent Cleanup**: Automatically removes old chunks from Qdrant when files are changed or deleted
-- **Score Threshold Filtering**: Only returns results above configurable relevance score (default 0.3)
+- **Score Threshold Filtering**: Only returns results above configurable relevance score (default 0.2)
+- **Token-Based Chunking**: Intelligent chunking with configurable size (400-800 tokens) and markdown-awareness
+- **JSON Output**: Structured JSON output for reliable parsing by AI agents (`--json` flag)
 - **Multi-Format Support**: Markdown, PDF, DOCX, PPTX, TXT, and more
 - **LlamaParse Integration**: Optional advanced PDF parsing for complex documents
 - **Metadata Filtering**: Filter results by subdirectory or filename
@@ -54,13 +56,18 @@ LLAMA_CLOUD_API_KEY=llx-your-llamaparse-api-key
 USE_LLAMA_PARSE=false  # Set to true for advanced PDF parsing
 
 # RAG Configuration (tunable)
-RAG_CHUNK_SIZE=1500           # Characters per chunk (512-2048 recommended)
-RAG_CHUNK_OVERLAP=200         # Overlap between chunks (10-20% of chunk size)
-RAG_SIMILARITY_TOP_K=5        # Final number of results (without reranking)
-RAG_SPARSE_TOP_K=12           # Results from each search method (dense/sparse)
-RAG_SCORE_THRESHOLD=0.3       # Minimum score for results (0.0-1.0, filters irrelevant)
+RAG_MIN_CHUNK_SIZE=400        # Minimum chunk size in tokens
+RAG_MAX_CHUNK_SIZE=800        # Maximum chunk size in tokens (system uses average: 600)
+RAG_CHUNK_OVERLAP=80          # Token overlap between chunks (13% at 600 tokens)
+RAG_SIMILARITY_TOP_K=5        # Final number of results to return
+RAG_SPARSE_TOP_K=12           # BM25 candidates before hybrid fusion
+RAG_SCORE_THRESHOLD=0.2       # Minimum relevance score (0.0-1.0)
 RAG_RERANK_TOP_N=5            # Final results after Cohere reranking
-RAG_RERANK_CANDIDATES=10      # Candidates sent to Cohere (higher = better quality)
+RAG_RERANK_CANDIDATES=20      # Candidates sent to Cohere (higher = better quality)
+
+# Chunking Strategy
+USE_SEMANTIC_CHUNKING=false   # true = semantic (slow), false = token-based with markdown respect (fast)
+SEMANTIC_THRESHOLD=95         # Breakpoint percentile for semantic chunking (90-99)
 ```
 
 ## Usage
@@ -120,7 +127,39 @@ python rag_query.py "query" --no-reindex-check
 
 # Hide source information
 python rag_query.py "query" --no-sources
+
+# JSON output (for AI agents and automation)
+python rag_query.py "query" --json
 ```
+
+### JSON Output Format
+
+When using `--json` flag, the output is structured JSON with complete chunk text:
+
+```json
+{
+  "status": "success",
+  "count": 3,
+  "score_threshold": 0.2,
+  "chunks": [
+    {
+      "text": "Complete chunk text without truncation...",
+      "score": 0.9935,
+      "metadata": {
+        "filename": "document.pdf",
+        "subdirectory": "topic",
+        "file_path": "/absolute/path/to/document.pdf"
+      }
+    }
+  ]
+}
+```
+
+**Benefits of JSON mode:**
+- ✅ **Complete text**: No truncation, full chunk content
+- ✅ **Reliable parsing**: Structured data, no regex needed
+- ✅ **Silent mode**: No log messages, pure JSON output
+- ✅ **AI-friendly**: Designed for programmatic consumption
 
 **Query process:**
 1. **Auto re-index check**: Detects changes/deletions and updates Qdrant
@@ -220,31 +259,35 @@ Each chunk includes:
 Edit `.env`:
 
 ```bash
-RAG_CHUNK_SIZE=1500      # Target chunk size in characters
-RAG_CHUNK_OVERLAP=200    # Overlap between chunks
+RAG_MIN_CHUNK_SIZE=400   # Minimum chunk size in tokens
+RAG_MAX_CHUNK_SIZE=800   # Maximum chunk size in tokens (average: 600)
+RAG_CHUNK_OVERLAP=80     # Token overlap (13% at 600 tokens)
+USE_SEMANTIC_CHUNKING=false  # false = token-based (fast), true = semantic (slow)
 ```
 
 **Guidelines:**
-- Small chunks (512-1000): Better for fact-based queries
-- Large chunks (1500-2048): Better for complex reasoning
-- Overlap: 10-20% of chunk size recommended
+- **Token-based chunking (recommended)**: Fast, markdown-aware, configurable 400-800 tokens
+- **Semantic chunking**: Slower but adaptive breakpoints at natural boundaries
+- Small chunks (300-500 tokens): Better for fact-based queries
+- Medium chunks (600-800 tokens): Better for complex reasoning (recommended)
+- Overlap: 10-15% of chunk size recommended
 
 ### Retrieval Parameters
 
 Edit `.env`:
 
 ```bash
-RAG_SIMILARITY_TOP_K=5   # Results returned (without reranking)
-RAG_SPARSE_TOP_K=12      # Results from each search method
-RAG_SCORE_THRESHOLD=0.3  # Minimum relevance score (0.0-1.0)
+RAG_SIMILARITY_TOP_K=5   # Final results returned
+RAG_SPARSE_TOP_K=12      # BM25 candidates before fusion
+RAG_SCORE_THRESHOLD=0.2  # Minimum relevance score (0.0-1.0)
 ```
 
 **Guidelines:**
 - More semantic focus: Lower `sparse_top_k` (e.g., 8)
 - More keyword focus: Higher `sparse_top_k` (e.g., 20)
 - More context to LLM: Higher `similarity_top_k` (e.g., 10)
-- Filter irrelevant results: Higher `score_threshold` (e.g., 0.4)
-- Allow more results: Lower `score_threshold` (e.g., 0.2)
+- Filter irrelevant results: Higher `score_threshold` (e.g., 0.3-0.4)
+- Allow more results: Lower `score_threshold` (e.g., 0.15-0.2)
 
 ### Reranking Parameters (Cohere)
 
@@ -252,15 +295,15 @@ Edit `.env`:
 
 ```bash
 USE_COHERE_RERANK=true         # Enable/disable reranking
-RAG_RERANK_CANDIDATES=10       # Candidates sent to reranker
+RAG_RERANK_CANDIDATES=20       # Candidates sent to reranker
 RAG_RERANK_TOP_N=5             # Final results after reranking
 ```
 
 **Guidelines:**
 - Better quality: Higher `rerank_candidates` (e.g., 20) - more options for reranker
-- Faster queries: Lower `rerank_candidates` (e.g., 8) - less API calls
-- More context to LLM: Higher `rerank_top_n` (e.g., 10)
-- **Recommended**: `candidates=2x` of `top_n` (e.g., 10 candidates → 5 results)
+- Faster queries: Lower `rerank_candidates` (e.g., 10) - less API calls
+- More context to LLM: Higher `rerank_top_n` (e.g., 8-10)
+- **Recommended**: `candidates=4x` of `top_n` (e.g., 20 candidates → 5 results)
 
 ### Embedding Model
 
@@ -301,12 +344,13 @@ A: Delete `rag_metadata.json` and run `python rag_index.py --force`
 
 - **Vector DB**: Qdrant (cloud-hosted)
 - **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions)
-- **Reranking**: Cohere rerank-english-v3.0 (optional)
+- **Reranking**: Cohere rerank-english-v3.0 (optional, recommended)
 - **Sparse Embeddings**: BM42 via FastEmbed
 - **Fusion Method**: Relative Score Fusion
-- **Chunking**: SentenceSplitter (sentence-aware)
+- **Chunking**: SentenceSplitter (token-based, 400-800 tokens) or SemanticSplitter
 - **PDF Parsing**: PyPDF (default) or LlamaParse (advanced)
 - **Framework**: LlamaIndex
+- **Output**: JSON (structured) or Human-readable text
 
 ### Performance
 
@@ -327,7 +371,8 @@ A: Delete `rag_metadata.json` and run `python rag_index.py --force`
 ✅ **Hybrid Search**: Relative Score Fusion combines semantic + keyword, 15-35% better than semantic-only
 ✅ **Cohere Reranking**: ML-based reranking significantly improves relevance (state-of-the-art 2024)
 ✅ **LlamaIndex**: 35% retrieval boost in 2025, ideal for focused RAG applications
-✅ **Chunk Size (1500)**: Optimal for complex reasoning tasks (research-backed)
+✅ **Token-Based Chunking**: 400-800 tokens optimal for RAG, faster than semantic, markdown-aware
+✅ **JSON Output**: Reliable structured output for AI agents, no truncation or parsing errors
 ✅ **OpenAI Embeddings**: Best price/performance ratio ($0.02/M tokens, 75.8% accuracy)
 ✅ **Qdrant**: Performance-conscious, cost-effective, production-ready
 ✅ **BM42**: Modern sparse embeddings, optimized for RAG
