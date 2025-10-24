@@ -13,3 +13,7 @@ Converts Markdown files to PDFs with GitHub styling. Use for creating profession
 ### rag-search
 Intelligent document search using RAG with hybrid search (semantic + keyword). Indexes documents from `Dokumente/03_RAG/` into Qdrant with OpenAI embeddings. Smart file change detection, multi-format support (PDF, Markdown, DOCX, etc.), and subdirectory filtering.
 **See**: `rag-search/README.md`
+
+### video-download
+Downloads videos from YouTube, Vimeo, Loom, and 1000+ platforms to MP4 with quality control. Use for downloading online videos with selectable quality (best, 4K, 1080p, 720p, etc.).
+**See**: `video-download/README.md`
