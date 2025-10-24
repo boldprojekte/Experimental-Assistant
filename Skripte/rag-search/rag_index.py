@@ -127,14 +127,30 @@ class DocumentIndexer:
             api_key=os.getenv('OPENAI_API_KEY')
         )
 
-        # Setup text splitter (sentence-aware chunking)
-        chunk_size = int(os.getenv('RAG_CHUNK_SIZE', '1500'))
-        chunk_overlap = int(os.getenv('RAG_CHUNK_OVERLAP', '200'))
+        # Setup text splitter (markdown-aware + semantic chunking)
+        chunk_size = int(os.getenv('RAG_CHUNK_SIZE', '800'))
+        chunk_overlap = int(os.getenv('RAG_CHUNK_OVERLAP', '80'))
 
-        Settings.node_parser = SentenceSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
-        )
+        use_semantic_chunking = os.getenv('USE_SEMANTIC_CHUNKING', 'false').lower() == 'true'
+
+        if use_semantic_chunking:
+            from llama_index.core.node_parser import SemanticSplitterNodeParser
+
+            print("✓ Using Semantic Chunking (adaptive breakpoints)")
+
+            # Semantic Splitter für optimale Chunk-Grenzen
+            Settings.node_parser = SemanticSplitterNodeParser(
+                buffer_size=1,
+                breakpoint_percentile_threshold=int(os.getenv('SEMANTIC_THRESHOLD', '95')),
+                embed_model=Settings.embed_model
+            )
+        else:
+            from llama_index.core.node_parser import MarkdownNodeParser
+
+            print("✓ Using MarkdownNodeParser (respects markdown structure)")
+
+            # Markdown-Parser respektiert Headers, Code-Blöcke, Listen
+            Settings.node_parser = MarkdownNodeParser()
 
         # Create vector store with hybrid search
         self.vector_store = QdrantVectorStore(
@@ -245,6 +261,16 @@ class DocumentIndexer:
                 print("  ✓ Collection cleared")
             except Exception as e:
                 print(f"  ⚠️  Collection might not exist: {e}")
+
+            # Reinitialize vector store to recreate collection
+            print("🔧 Reinitializing vector store...")
+            self.vector_store = QdrantVectorStore(
+                client=self.qdrant_client,
+                collection_name=self.collection_name,
+                enable_hybrid=True,
+                batch_size=20,
+                fastembed_sparse_model="Qdrant/bm42-all-minilm-l6-v2-attentions"
+            )
 
         # Check for changes
         changed_files = self.get_changed_files()
