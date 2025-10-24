@@ -128,7 +128,8 @@ class DocumentIndexer:
         )
 
         # Setup text splitter (markdown-aware + semantic chunking)
-        chunk_size = int(os.getenv('RAG_CHUNK_SIZE', '800'))
+        min_chunk_size = int(os.getenv('RAG_MIN_CHUNK_SIZE', '400'))
+        max_chunk_size = int(os.getenv('RAG_MAX_CHUNK_SIZE', '800'))
         chunk_overlap = int(os.getenv('RAG_CHUNK_OVERLAP', '80'))
 
         use_semantic_chunking = os.getenv('USE_SEMANTIC_CHUNKING', 'false').lower() == 'true'
@@ -145,12 +146,19 @@ class DocumentIndexer:
                 embed_model=Settings.embed_model
             )
         else:
-            from llama_index.core.node_parser import MarkdownNodeParser
+            from llama_index.core.node_parser import SentenceSplitter
 
-            print("✓ Using MarkdownNodeParser (respects markdown structure)")
+            print(f"✓ Using SentenceSplitter (token-based: {min_chunk_size}-{max_chunk_size} tokens)")
 
-            # Markdown-Parser respektiert Headers, Code-Blöcke, Listen
-            Settings.node_parser = MarkdownNodeParser()
+            # SentenceSplitter mit Token-Limit und Markdown-Awareness
+            # Respektiert Absätze durch paragraph_separator
+            avg_chunk_size = (min_chunk_size + max_chunk_size) // 2
+            Settings.node_parser = SentenceSplitter(
+                chunk_size=avg_chunk_size,      # Mittelwert (z.B. 600 tokens)
+                chunk_overlap=chunk_overlap,
+                separator="\n\n",                # Respektiert Markdown-Absätze
+                paragraph_separator="\n\n\n"    # Respektiert größere Breaks (z.B. zwischen Sections)
+            )
 
         # Create vector store with hybrid search
         self.vector_store = QdrantVectorStore(
