@@ -42,17 +42,17 @@ Use RFC3339 format for date filters:
 All text must use:
 ```
 font-family: Arial, sans-serif;
-font-size: 12px;
+font-size: 16px;
 color: #333333;
 line-height: 1.6;
 ```
 
 ### HTML Structure Elements
 
-- **Paragraphs**: `<p style="font-family: Arial, sans-serif; font-size: 12px; color: #333333; line-height: 1.6; margin-bottom: 16px;">`
+- **Paragraphs**: `<p style="font-family: Arial, sans-serif; font-size: 16px; color: #333333; line-height: 1.6; margin-bottom: 16px;">`
 - **Bold**: `<strong>Important Text</strong>`
-- **Lists**: `<ul style="font-family: Arial, sans-serif; font-size: 12px; color: #333333; margin-bottom: 16px; padding-left: 20px;">`
-- **Numbered**: `<ol style="font-family: Arial, sans-serif; font-size: 12px; color: #333333; margin-bottom: 16px; padding-left: 20px;">`
+- **Lists**: `<ul style="font-family: Arial, sans-serif; font-size: 16px; color: #333333; margin-bottom: 16px; padding-left: 20px;">`
+- **Numbered**: `<ol style="font-family: Arial, sans-serif; font-size: 16px; color: #333333; margin-bottom: 16px; padding-left: 20px;">`
 
 ### Email Structure Guidelines
 
@@ -87,13 +87,14 @@ line-height: 1.6;
 
 **Special exception**: For contact lookup, you may use ClickUp MCP directly without loading the skill.
 
-When email composition requires a contact's email address:
-1. Use `mcp__clickup__clickup_search` with contact name/company
-2. Contacts are located in **Backoffice Space**
-3. Extract email address from contact task
-4. Use in Gmail draft/reply
+**Auto-lookup when creating emails/drafts:**
+When a name is mentioned for email recipient:
+1. Use `mcp__clickup__clickup_search` with name (searches Backoffice Space)
+2. **No results** → Use placeholder `[E-Mail-Adresse einfügen]`
+3. **One contact found** → Extract and use email directly
+4. **Multiple contacts** → Ask user which one to use
 
-**Example workflow:**
+**Manual lookup workflow:**
 - User: "Send email to supplier XYZ"
 - Action: `clickup_search` for "XYZ" → Find contact in Backoffice → Extract email → Create draft
 

@@ -1,0 +1,5 @@
+# Environment
+.env
+
+# Metadata (local per environment)
+rag_metadata.json

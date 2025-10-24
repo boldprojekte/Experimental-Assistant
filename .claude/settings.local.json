@@ -22,7 +22,20 @@
       "Skill(browser)",
       "mcp__playwright__browser_click",
       "mcp__playwright__browser_fill_form",
-      "mcp__playwright__browser_handle_dialog"
+      "mcp__playwright__browser_handle_dialog",
+      "mcp__clickup__clickup_search",
+      "mcp__clickup__clickup_get_workspace_hierarchy",
+      "mcp__clickup__clickup_get_workspace_tasks",
+      "mcp__clickup__clickup_create_task",
+      "mcp__clickup__clickup_update_task",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Skill(scripts)",
+      "Skill(rag)",
+      "Bash(node markdown_zu_pdf.js:*)",
+      "Bash(test:*)",
+      "Bash(node:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

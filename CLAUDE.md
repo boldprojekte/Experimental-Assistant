@@ -1,201 +1,187 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working in this repository.
 
 ## Project Overview
 
-This is a personal AI assistant project for Jan-Peter Franke that integrates with:
-- **ClickUp** (project management) via MCP server with dedicated skill
-- **Google Calendar** (calendar management) via MCP server with dedicated skill
-- **Gmail** (email management) via MCP server with dedicated skill
-- **Playwright** (browser automation) via MCP server with dedicated skill
+Personal AI assistant for Jan-Peter Franke integrating:
+- **ClickUp** (project management)
+- **Google Calendar** (calendar management)
+- **Gmail** (email management)
+- **Playwright** (browser automation)
+
+All integrations use MCP servers with dedicated workflow skills.
 
 ## Project Structure
 
 ```
 ├── .claude/
-│   ├── skills/
-│   │   ├── clickup/           # ClickUp workflow skill (SKILL.md)
-│   │   ├── calendar/          # Calendar workflow skill (SKILL.md)
-│   │   ├── gmail/             # Gmail workflow skill (SKILL.md)
-│   │   ├── browser/           # Browser automation skill (SKILL.md)
-│   │   ├── deep-research/     # Deep Research workflow skill (SKILL.md)
-│   │   └── scripts/           # Scripts creation/execution skill (SKILL.md)
-│   ├── agents/                # Subagent definitions (e.g., web-research-specialist.md)
-│   └── settings.local.json    # MCP tool permissions
-├── Dokumente/                 # Document management
-│   ├── 01_in Arbeit/         # Documents being worked on by AI/user
-│   ├── 02_Review/            # Documents awaiting user review
-│   ├── INDEX.md              # Document index
-│   └── 00_Archiv/            # Archived documents
-├── Aufgaben/                  # Active task lists
-│   └── Archiv/               # Completed task lists
-└── Skripte/                   # Code scripts for tasks
+│   ├── skills/           # Workflow skills (SKILL.md)
+│   │   ├── clickup/
+│   │   ├── calendar/
+│   │   ├── gmail/
+│   │   ├── browser/
+│   │   ├── deep-research/
+│   │   ├── scripts/
+│   │   └── rag/
+│   ├── agents/           # Subagent definitions
+│   └── settings.local.json
+├── Dokumente/            # Document management
+│   ├── 01_in Arbeit/    # Active work
+│   ├── 02_Review/       # Awaiting review
+│   ├── 03_RAG/          # Long-term knowledge base
+│   ├── INDEX.md         # Document index
+│   └── 00_Archiv/       # Archived
+├── Aufgaben/             # Active task lists
+│   └── Archiv/          # Completed tasks
+└── Skripte/              # Utility scripts
 ```
+
+## Conventions
 
 ### Document Workflow
 
-Documents follow a specific lifecycle:
-1. **01_in Arbeit**: Active work by AI agent and user
-2. **02_Review**: Ready for user review after AI completion
-3. **Parent folder** (`Dokumente/`): After review is complete and approved
-4. **00_Archiv**: No longer needed
+Documents follow this lifecycle:
+1. **01_in Arbeit** → Active work by AI/user
+2. **02_Review** → Ready for user review
+3. **Dokumente/** → Reviewed and approved
+4. **00_Archiv** → No longer needed
 
-Task lists in `Aufgaben/` are actively maintained to track progress and coordination. Completed lists move to `Aufgaben/Archiv/`.
-
-Documents can be indexed in `Dokumente/INDEX.md` for easy retrieval.
+Task lists in `Aufgaben/` track active progress. Completed lists move to `Aufgaben/Archiv/`.
 
 ### Language Handling
 
-**CRITICAL**: Documents and responses must match the language of the user's request:
-- German folder names are part of the workflow structure (Dokumente, Aufgaben, Skripte)
-- All prompts and skills are in English for consistency
-- **Documents created must be in the SAME language as the user's request**
-- Agent responses should match the request language
+**CRITICAL**: Match document language to user's request language.
+- Folder names (Dokumente, Aufgaben, Skripte) remain in German
+- Skills and prompts remain in English
+- **Document content matches request language**
 
-**Example**: User asks in German → Document in German. User asks in English → Document in English.
+### Task Naming
 
-### Task Naming Convention
+Task lists follow: `YYYY-MM-DD_{Type}_{Topic}.md`
+- Research: `2025-10-23_Research_Machine_Learning.md`
+- General: `2025-10-23_Task_Update_Documentation.md`
 
-Task lists in `Aufgaben/` follow a consistent naming pattern:
-- Research tasks: `YYYY-MM-DD_Research_{Topic}.md`
-- General tasks: `YYYY-MM-DD_Task_{Description}.md`
+## Skills Routing
 
-**Example**: `2025-10-23_Research_Machine_Learning.md` or `2025-10-23_Task_Update_Documentation.md`
+**CRITICAL**: Always invoke the appropriate skill BEFORE calling MCP tools directly. Skills contain workflow logic, search strategies, and operational patterns that are essential for correct execution.
 
-## ClickUp Integration
+### Quick Reference
 
-**IMPORTANT**: Always use the ClickUp skill when working with ClickUp operations.
+| Skill | When to Invoke | MCP Tool Pattern |
+|-------|----------------|------------------|
+| `clickup` | Task/project management operations | `mcp__clickup__*` |
+| `calendar` | Calendar and scheduling operations | `mcp__Calendar__*` |
+| `gmail` | Email management operations | `mcp__Gmail__*` |
+| `browser` | Web automation and interaction | `mcp__playwright__*` |
+| `deep-research` | Complex multi-source research | Web-research subagents |
+| `scripts` | Code utilities and conversions | `Skripte/` directory |
+| `rag` | Knowledge indexing and retrieval | `Skripte/rag-search/*.py` |
 
-### When to Invoke the ClickUp Skill
+### Skill-Specific Guidance
 
-Use the skill for ANY ClickUp-related operations:
-- Creating, editing, or searching tasks
-- Showing all tasks in a project/list
-- Managing contacts (Kontakte)
-- Creating documents
-- Organizing lists or folders
-- Starting/stopping time tracking
+**ClickUp** (`clickup`)
+- Invoke for: Creating/editing/searching tasks, managing contacts, creating documents, organizing lists/folders, time tracking
+- **Never** call `mcp__clickup__*` tools directly
+- Skill contains: Workspace structure, search strategies, workflow guidance
 
-**Invoke the skill**: Use `Skill` tool with command `clickup` before calling any `mcp__clickup__*` tools.
+**Calendar** (`calendar`)
+- Invoke for: Viewing/creating/deleting events, checking conflicts, scheduling meetings
+- **Never** call `mcp__Calendar__*` tools directly
+- Skill contains: Calendar selection logic (business vs. personal), conflict-checking workflows
 
-**NEVER call ClickUp MCP tools directly** without first loading the skill. The skill contains critical workflow guidance, workspace structure, and search strategy logic.
+**Gmail** (`gmail`)
+- Invoke for: Searching/reading/replying to emails, managing labels/drafts, organizing inbox
+- **Never** call `mcp__Gmail__*` tools directly
+- Skill contains: Search strategies, email composition patterns, organization workflows
 
-## Calendar Integration
+**Browser** (`browser`)
+- Invoke for: Website navigation, screenshots, form interaction, web scraping, visual interaction
+- **Never** call `mcp__playwright__*` tools directly
+- Skill contains: Interaction workflows, permission requirements, automation patterns
 
-**IMPORTANT**: Always use the Calendar skill when working with calendar operations.
+**Deep Research** (`deep-research`)
+- Invoke for: Comprehensive research requiring multiple sources, complex analysis, topic synthesis
+- **Never** spawn `web-research-specialist` subagents directly
+- Skill contains: Task decomposition, parallel research coordination, documentation workflows
 
-### When to Invoke the Calendar Skill
+**Scripts** (`scripts`)
+- Invoke for: File conversions, data processing, automation, learning new tools through code
+- **Never** work with `Skripte/` without loading skill first
+- Skill contains: Script organization, discovery workflows, INDEX management
+- **Critical**: Always check `Skripte/INDEX.md` before installing new tools
 
-Use the skill for ANY calendar-related operations:
-- Viewing/retrieving calendar events (today, this week, next week, etc.)
-- Creating new appointments or meetings
-- Deleting calendar events
-- Checking for scheduling conflicts
-- Any operation involving both business and personal calendars
+**RAG** (`rag`)
+- Invoke for: Indexing documents into long-term memory, querying knowledge base, retrieving information from stored documents
+- **Never** call `rag_index.py` or `rag_query.py` directly
+- Skill contains: Knowledge base management, query reformulation strategies, answer synthesis from chunks
+- **Critical**: Always load skill before knowledge management operations
 
-**Invoke the skill**: Use `Skill` tool with command `calendar` before calling any `mcp__Calendar__*` tools.
+### Decision Criteria
 
-**NEVER call Calendar MCP tools directly** without first loading the skill. The skill contains critical calendar selection logic (business vs. personal) and conflict-checking requirements.
+When choosing between similar tools, use these guidelines:
 
-## Gmail Integration
+**Research: `deep-research` vs `WebSearch`**
 
-**IMPORTANT**: Always use the Gmail skill when working with email operations.
-
-### When to Invoke the Gmail Skill
-
-Use the skill for ANY Gmail-related operations:
-- Searching for emails or threads
-- Reading messages or conversations
-- Replying to emails
-- Managing labels (adding, removing, creating)
-- Creating or managing drafts
-- Organizing inbox (mark as read/unread, delete)
-- Any operation involving email management
-
-**Invoke the skill**: Use `Skill` tool with command `gmail` before calling any `mcp__Gmail__*` tools.
-
-**NEVER call Gmail MCP tools directly** without first loading the skill. The skill contains critical search strategy guidance, workflow patterns, and email organization logic.
-
-## Deep Research Integration
-
-**IMPORTANT**: Always use the Deep Research skill for comprehensive internet research tasks.
-
-### When to Invoke the Deep Research Skill
-
-Use the skill for ANY deep research operations:
-- Comprehensive internet research requiring multiple sources
-- Complex research questions that need to be broken down into sub-questions
-- Research tasks requiring parallel web searches
-- Detailed analysis and investigation of topics
-- Research that needs structured documentation and tracking
-
-**Invoke the skill**: Use `Skill` tool with command `deep-research` before starting any multi-source research.
-
-**NEVER spawn web-research-specialist subagents directly** without first loading the skill. The skill contains critical workflow orchestration.
-
-### Examples: When to use deep-research vs. WebSearch
-
-**Use deep-research skill for:**
+Use `deep-research` skill when:
 - Complex topics requiring 3+ independent sub-topics
 - Comparisons with multiple aspects to analyze
 - Comprehensive analysis from various angles
 - Topics requiring synthesis of multiple sources
+- Parallel research coordination needed
 
-**Use WebSearch tool for:**
+Use `WebSearch` tool when:
 - Simple definitions or single facts
 - Straightforward questions answerable in 1-2 searches
 - Quick lookups or current information
+- Time-sensitive queries requiring fast answers
 
-**Rule of thumb**: If the answer requires breaking down into 3+ sub-topics → use deep-research. Otherwise → use WebSearch.
+**Web Access: `browser` vs `WebFetch`**
 
-See the deep-research skill for detailed complexity assessment guidance and examples.
-
-## Browser Integration
-
-**IMPORTANT**: Always use the Browser skill when working with browser automation tasks.
-
-### When to Invoke the Browser Skill
-
-Use the skill for ANY browser automation operations:
-- Navigating websites and extracting information
-- Taking screenshots of web pages
-- Interacting with web applications
-- Automated browsing tasks
-- Web scraping or data extraction
-- Any task requiring visual interaction with websites, the user can see as well
-
-**Invoke the skill**: Use `Skill` tool with command `browser` before calling any `mcp__playwright__*` tools.
-
-**NEVER call Playwright MCP tools directly** without first loading the skill. The skill contains critical workflow patterns (Navigate → Snapshot → Interact → Verify) and permission requirements.
-
-### When to Use Browser vs. Other Tools
-
-**Use Browser when:**
+Use `browser` skill when:
 - Forms require visual interaction (CAPTCHAs, dynamic fields)
 - Multi-step processes with page transitions
 - JavaScript-heavy sites (SPAs)
 - Login sessions required
 - User wants to watch the interaction process
+- Complex web scraping with dynamic content
 
-**Use WebFetch/WebSearch when:**
-- Simple information retrieval
+Use `WebFetch` tool when:
+- Simple information retrieval from static pages
 - Static content extraction
 - No interaction needed
 - Faster, lighter approach is sufficient
+- Reading documentation or articles
 
-## Scripts Integration
+**Tool Installation: Scripts First**
 
-**IMPORTANT**: Always use the Scripts skill when working with scripts in `Skripte/`.
+Before installing any new tools or writing conversion/processing code:
+1. **ALWAYS** check `Skripte/INDEX.md` first
+2. Look for existing scripts that solve the problem
+3. Only install new tools if no script exists
 
-### When to Invoke the Scripts Skill
+Examples:
+- ❌ "make PDF" → Install Pandoc directly
+- ✅ "make PDF" → Load `scripts` skill → Check INDEX.md → Use `markdown-zu-pdf`
+- ❌ "transcribe audio" → Install Whisper
+- ✅ "transcribe audio" → Load `scripts` skill → Check INDEX.md → Use existing script
 
-Use the skill for ANY script-related operations:
-- Creating new scripts
-- Running existing scripts
-- Organizing script directories
-- When the user asks for something that can only be done with a script (utility tool)
+**Knowledge Retrieval: `rag` vs `WebSearch` vs File Reading**
 
-**Invoke the skill**: Use `Skill` tool with command `scripts` before working with `Skripte/`.
+Use `rag` skill when:
+- User asks about previously saved knowledge
+- Querying long-term memory (`Dokumente/03_RAG/`)
+- Need to retrieve information from indexed documents
+- Searching across multiple documents with semantic understanding
 
-**NEVER create or run scripts** without first loading the skill. The skill contains critical organization and workflow patterns.
+Use `WebSearch` tool when:
+- Need current/live information from the internet
+- User explicitly asks to search the web
+- Information is not in knowledge base
+- Time-sensitive or recent events
+
+Use File Reading (Read/Grep tools) when:
+- Specific file location is known
+- Need exact file content
+- Working with active documents (`01_in Arbeit/`, `02_Review/`)
+- Code navigation or debugging
