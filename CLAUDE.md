@@ -9,6 +9,7 @@ Personal AI assistant for Jan-Peter Franke integrating:
 - **Google Calendar** (calendar management)
 - **Gmail** (email management)
 - **Playwright** (browser automation)
+- **Archicad** (CAD automation for architecture)
 
 All integrations use MCP servers with dedicated workflow skills.
 
@@ -21,6 +22,7 @@ All integrations use MCP servers with dedicated workflow skills.
 │   │   ├── calendar/
 │   │   ├── gmail/
 │   │   ├── browser/
+│   │   ├── archicad/
 │   │   ├── deep-research/
 │   │   ├── scripts/
 │   │   └── rag/
@@ -74,6 +76,7 @@ Task lists follow: `YYYY-MM-DD_{Type}_{Topic}.md`
 | `calendar` | Calendar and scheduling operations | `mcp__Calendar__*` |
 | `gmail` | Email management operations | `mcp__Gmail__*` |
 | `browser` | Web automation and interaction | `mcp__playwright__*` |
+| `archicad` | CAD automation and design operations | `mcp__archicad__*` |
 | `deep-research` | Complex multi-source research | Web-research subagents |
 | `scripts` | Code utilities and conversions | `Skripte/` directory |
 | `rag` | Knowledge indexing and retrieval | `Skripte/rag-search/*.py` |
@@ -99,6 +102,12 @@ Task lists follow: `YYYY-MM-DD_{Type}_{Topic}.md`
 - Invoke for: Website navigation, screenshots, form interaction, web scraping, visual interaction
 - **Never** call `mcp__playwright__*` tools directly
 - Skill contains: Interaction workflows, permission requirements, automation patterns
+
+**Archicad** (`archicad`)
+- Invoke for: CAD automation, creating/modifying elements, querying project data, managing layers/views, Archicad control
+- **Never** call `mcp__archicad__*` tools directly
+- Skill contains: Multi-instance management, semantic tool discovery, workflow patterns
+- **Critical**: Always discover instances first, use natural language for tool discovery
 
 **Deep Research** (`deep-research`)
 - Invoke for: Comprehensive research requiring multiple sources, complex analysis, topic synthesis

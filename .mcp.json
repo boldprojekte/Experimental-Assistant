@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "archicad": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "tapir-archicad-mcp",
+        "archicad-server",
+        "--port",
+        "19723"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -32,12 +32,19 @@
       "Bash(python3:*)",
       "Skill(scripts)",
       "Skill(rag)",
+      "Skill(archicad)",
       "Bash(node markdown_zu_pdf.js:*)",
       "Bash(test:*)",
       "Bash(node:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "mcp__archicad__archicad_discover_tools",
+      "mcp__archicad__archicad_call_tool"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "archicad"
+  ]
 }
